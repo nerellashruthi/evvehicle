@@ -1,0 +1,206 @@
+import type { Station } from '@/types';
+
+export const stations: Station[] = [
+  {
+    id: 'greenvolt-hub',
+    name: 'GreenVolt Hub',
+    location: 'Banjara Hills, Hyderabad',
+    distanceKm: 2.4,
+    lat: 17.4126,
+    lng: 78.4392,
+    mapX: 35,
+    mapY: 42,
+    chargers: [
+      { type: 'Fast', totalPorts: 6, availablePorts: 3, speedKW: 50 },
+      { type: 'Normal', totalPorts: 4, availablePorts: 2, speedKW: 22 },
+    ],
+    status: 'Available',
+    rating: 4.7,
+    open24Hours: true,
+    amenities: ['Cafe', 'Restroom', 'WiFi', 'Parking'],
+  },
+  {
+    id: 'ev-powerpoint',
+    name: 'EV PowerPoint',
+    location: 'Hi-Tech City, Hyderabad',
+    distanceKm: 5.1,
+    lat: 17.4435,
+    lng: 78.3772,
+    mapX: 58,
+    mapY: 28,
+    chargers: [
+      { type: 'Ultra-Fast', totalPorts: 4, availablePorts: 1, speedKW: 150 },
+      { type: 'Fast', totalPorts: 4, availablePorts: 4, speedKW: 50 },
+    ],
+    status: 'Limited',
+    rating: 4.5,
+    open24Hours: true,
+    amenities: ['Cafe', 'Shopping', 'WiFi', 'Restroom'],
+  },
+  {
+    id: 'chargegrid-station',
+    name: 'ChargeGrid Station',
+    location: 'Gachibowli, Hyderabad',
+    distanceKm: 7.8,
+    lat: 17.4402,
+    lng: 78.3489,
+    mapX: 72,
+    mapY: 55,
+    chargers: [
+      { type: 'Fast', totalPorts: 8, availablePorts: 5, speedKW: 50 },
+      { type: 'Normal', totalPorts: 6, availablePorts: 6, speedKW: 22 },
+    ],
+    status: 'Available',
+    rating: 4.8,
+    open24Hours: true,
+    amenities: ['Restroom', 'Parking', 'EV Lounge'],
+  },
+  {
+    id: 'ecocharge-plaza',
+    name: 'EcoCharge Plaza',
+    location: 'Kondapur, Hyderabad',
+    distanceKm: 9.3,
+    lat: 17.4916,
+    lng: 78.3770,
+    mapX: 48,
+    mapY: 68,
+    chargers: [
+      { type: 'Ultra-Fast', totalPorts: 6, availablePorts: 0, speedKW: 150 },
+      { type: 'Fast', totalPorts: 4, availablePorts: 1, speedKW: 50 },
+    ],
+    status: 'Occupied',
+    rating: 4.3,
+    open24Hours: false,
+    amenities: ['Cafe', 'Shopping', 'Restroom'],
+  },
+  {
+    id: 'voltway-hub',
+    name: 'VoltWay Hub',
+    location: 'Madhapur, Hyderabad',
+    distanceKm: 4.2,
+    lat: 17.4497,
+    lng: 78.3871,
+    mapX: 52,
+    mapY: 38,
+    chargers: [
+      { type: 'Fast', totalPorts: 5, availablePorts: 3, speedKW: 50 },
+      { type: 'Normal', totalPorts: 3, availablePorts: 2, speedKW: 22 },
+    ],
+    status: 'Available',
+    rating: 4.6,
+    open24Hours: true,
+    amenities: ['WiFi', 'Parking', 'Restroom'],
+  },
+  {
+    id: 'tata-power-ev',
+    name: 'Tata Power EV Station',
+    location: 'Secunderabad, Hyderabad',
+    distanceKm: 12.6,
+    lat: 17.4399,
+    lng: 78.4983,
+    mapX: 82,
+    mapY: 18,
+    chargers: [
+      { type: 'Ultra-Fast', totalPorts: 3, availablePorts: 2, speedKW: 150 },
+      { type: 'Fast', totalPorts: 6, availablePorts: 4, speedKW: 50 },
+    ],
+    status: 'Available',
+    rating: 4.9,
+    open24Hours: true,
+    amenities: ['Cafe', 'Restroom', 'WiFi', 'Parking', 'EV Lounge'],
+  },
+  {
+    id: 'ather-grid',
+    name: 'Ather Grid Station',
+    location: 'Jubilee Hills, Hyderabad',
+    distanceKm: 3.7,
+    lat: 17.4239,
+    lng: 78.4083,
+    mapX: 40,
+    mapY: 50,
+    chargers: [
+      { type: 'Fast', totalPorts: 4, availablePorts: 2, speedKW: 50 },
+      { type: 'Normal', totalPorts: 4, availablePorts: 3, speedKW: 22 },
+    ],
+    status: 'Limited',
+    rating: 4.4,
+    open24Hours: false,
+    amenities: ['Restroom', 'Parking'],
+  },
+];
+
+export const timeSlots = [
+  '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM',
+  '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM',
+  '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM',
+  '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM',
+];
+
+export const problemCards = [
+  {
+    icon: 'SearchX',
+    title: 'Finding Chargers',
+    description: 'Users may struggle to locate suitable charging stations nearby.',
+  },
+  {
+    icon: 'HelpCircle',
+    title: 'Unknown Availability',
+    description: 'Users may reach a station only to discover that chargers are occupied.',
+  },
+  {
+    icon: 'Clock',
+    title: 'Waiting & Unnecessary Stops',
+    description: 'Without reservation, users may waste time waiting for a charger.',
+  },
+  {
+    icon: 'BatteryWarning',
+    title: 'Range Anxiety',
+    description: 'Long-distance EV trips can become stressful when users are unsure where to charge.',
+  },
+];
+
+export const benefits = [
+  {
+    icon: 'Clock',
+    title: 'Less Waiting',
+    description: 'Know charger availability before reaching the station.',
+  },
+  {
+    icon: 'Route',
+    title: 'Fewer Unnecessary Stops',
+    description: 'Plan charging around your actual journey and battery level.',
+  },
+  {
+    icon: 'BatteryCharging',
+    title: 'Reduced Range Anxiety',
+    description: 'Know exactly where and when you can recharge along your route.',
+  },
+  {
+    icon: 'Sparkles',
+    title: 'Smarter Travel',
+    description: 'Combine station discovery, reservation, and trip planning in one platform.',
+  },
+];
+
+export const futureFeatures = [
+  {
+    icon: 'Brain',
+    title: 'AI Charging Predictions',
+    description: 'Predict charger demand and busy periods before you arrive.',
+  },
+  {
+    icon: 'CreditCard',
+    title: 'Online Payments',
+    description: 'Pay for charging sessions directly through the Chargenix platform.',
+  },
+  {
+    icon: 'Radio',
+    title: 'IoT Charger Monitoring',
+    description: 'Connect directly with charging hardware for real-time status.',
+  },
+  {
+    icon: 'UserCheck',
+    title: 'Personalized Charging',
+    description: 'Recommend charging strategies based on your vehicle and driving patterns.',
+  },
+];
