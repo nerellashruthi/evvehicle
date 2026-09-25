@@ -52,7 +52,7 @@ export function StationsPage() {
           <div className="space-y-4">
             <div className="glass p-4">
               <div className="flex gap-2">
-                <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-ink-800/80 border border-white/10 focus-within:border-electric-500/50 transition-colors">
+                <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-ink-800/80 border border-white/10 focus-within:border-acid/50 transition-colors">
                   <Search className="w-4 h-4 text-ink-400" />
                   <input
                     type="text"
@@ -71,7 +71,7 @@ export function StationsPage() {
                   onClick={() => setShowFilters(!showFilters)}
                   className={`px-3 py-2.5 rounded-xl border transition-all flex items-center gap-2 text-sm font-medium ${
                     showFilters
-                      ? 'bg-electric-500/10 border-electric-500/30 text-electric-400'
+                      ? 'bg-acid/10 border-acid/30 text-acid'
                       : 'bg-ink-800/80 border-white/10 text-ink-300'
                   }`}
                 >
@@ -92,7 +92,7 @@ export function StationsPage() {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-xs font-medium text-ink-300">Max Distance</label>
-                          <span className="text-xs text-electric-400 font-medium">{maxDistance} km</span>
+                          <span className="text-xs text-acid font-medium">{maxDistance} km</span>
                         </div>
                         <input
                           type="range"
@@ -100,7 +100,7 @@ export function StationsPage() {
                           max="20"
                           value={maxDistance}
                           onChange={(e) => setMaxDistance(Number(e.target.value))}
-                          className="w-full accent-electric-500"
+                          className="w-full accent-acid"
                         />
                       </div>
 
@@ -113,7 +113,7 @@ export function StationsPage() {
                               onClick={() => setChargerType(t)}
                               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                 chargerType === t
-                                  ? 'bg-electric-500/15 text-electric-400 border border-electric-500/30'
+                                  ? 'bg-acid/15 text-acid border border-acid/30'
                                   : 'bg-ink-800/50 text-ink-300 border border-white/10 hover:border-white/20'
                               }`}
                             >
@@ -127,7 +127,7 @@ export function StationsPage() {
                         <label className="text-xs font-medium text-ink-300">Available Only</label>
                         <button
                           onClick={() => setAvailableOnly(!availableOnly)}
-                          className={`relative w-10 h-5 rounded-full transition-colors ${availableOnly ? 'bg-electric-500' : 'bg-ink-600'}`}
+                          className={`relative w-10 h-5 rounded-full transition-colors ${availableOnly ? 'bg-acid' : 'bg-ink-600'}`}
                         >
                           <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${availableOnly ? 'translate-x-5' : 'translate-x-0.5'}`} />
                         </button>
@@ -146,7 +146,7 @@ export function StationsPage() {
                               onClick={() => setSortBy(s.value)}
                               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                 sortBy === s.value
-                                  ? 'bg-electric-500/15 text-electric-400 border border-electric-500/30'
+                                  ? 'bg-acid/15 text-acid border border-acid/30'
                                   : 'bg-ink-800/50 text-ink-300 border border-white/10'
                               }`}
                             >
@@ -164,7 +164,7 @@ export function StationsPage() {
             <div className="flex items-center justify-between text-sm text-ink-400 px-1">
               <span>{filtered.length} stations found</span>
               <span className="flex items-center gap-1 text-xs">
-                <Navigation className="w-3.5 h-3.5 text-electric-400" />
+                <Navigation className="w-3.5 h-3.5 text-acid" />
                 Hyderabad region
               </span>
             </div>
@@ -176,7 +176,7 @@ export function StationsPage() {
                   <p className="text-ink-300 text-sm">No stations match your filters.</p>
                   <button
                     onClick={() => { setSearch(''); setMaxDistance(20); setChargerType('all'); setAvailableOnly(false); }}
-                    className="mt-3 text-sm text-electric-400 hover:underline"
+                    className="mt-3 text-sm text-acid hover:underline"
                   >
                     Clear all filters
                   </button>

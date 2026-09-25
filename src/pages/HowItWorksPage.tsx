@@ -64,18 +64,18 @@ export function HowItWorksPage() {
               <div className={`glass p-8 lg:p-10 ${i % 2 === 1 ? 'lg:ml-12' : 'lg:mr-12'}`}>
                 <div className="flex flex-col lg:flex-row gap-6 items-start">
                   <div className="relative shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-electric-500/10 border border-electric-500/20 flex items-center justify-center">
-                      <step.icon className="w-8 h-8 text-electric-400" />
+                    <div className="w-16 h-16 rounded-2xl bg-acid/10 border border-acid/20 flex items-center justify-center">
+                      <step.icon className="w-8 h-8 text-acid" />
                     </div>
                     <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-ink-800 border border-white/10 flex items-center justify-center">
-                      <span className="text-xs font-bold text-electric-400">{step.num}</span>
+                      <span className="text-xs font-medium text-acid">{step.num}</span>
                     </div>
                   </div>
 
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-display font-bold text-2xl text-white">{step.title}</h3>
-                      <span className="px-2.5 py-0.5 rounded-full bg-electric-500/10 border border-electric-500/20 text-xs text-electric-400 font-medium">
+                      <h3 className="font-display font-medium text-2xl text-white">{step.title}</h3>
+                      <span className="px-2.5 py-0.5 rounded-full bg-acid/10 border border-acid/20 text-xs text-acid font-medium">
                         Module {i + 1}
                       </span>
                     </div>
@@ -84,7 +84,7 @@ export function HowItWorksPage() {
 
                     <button
                       onClick={() => navigate(step.action.page)}
-                      className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-electric-400 hover:gap-3 transition-all"
+                      className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-acid hover:gap-3 transition-all"
                     >
                       {step.action.label}
                       <ArrowRight className="w-4 h-4" />
@@ -103,12 +103,12 @@ export function HowItWorksPage() {
         {/* Flow summary */}
         <Reveal>
           <div className="glass-strong p-8 lg:p-12 mb-20">
-            <h3 className="font-display font-bold text-xl text-white text-center mb-8">The Complete Journey</h3>
+            <h3 className="font-display font-medium text-xl text-white text-center mb-8">The Complete Journey</h3>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-2">
               {['FIND', 'CHECK', 'RESERVE', 'PLAN'].map((mod, i) => (
                 <div key={mod} className="flex items-center gap-2 sm:gap-4">
-                  <div className="px-5 py-3 rounded-xl bg-electric-500/10 border border-electric-500/20">
-                    <span className="font-display font-bold text-electric-400 text-sm">{mod}</span>
+                  <div className="px-5 py-3 rounded-xl bg-acid/10 border border-acid/20">
+                    <span className="font-display font-medium text-acid text-sm">{mod}</span>
                   </div>
                   {i < 3 && <ArrowRight className="w-5 h-5 text-ink-500 hidden sm:block" />}
                 </div>

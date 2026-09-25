@@ -42,7 +42,7 @@ export function StationDetailsPage() {
 
         <button
           onClick={() => navigate('stations')}
-          className="flex items-center gap-2 text-sm text-ink-400 hover:text-electric-400 transition-colors mb-6"
+          className="flex items-center gap-2 text-sm text-ink-400 hover:text-acid transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to stations
@@ -58,7 +58,7 @@ export function StationDetailsPage() {
             >
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="font-display font-bold text-2xl text-white">{station.name}</h2>
+                  <h2 className="font-display font-medium text-2xl text-white">{station.name}</h2>
                   <div className="flex items-center gap-1 mt-1 text-sm text-ink-400">
                     <MapPin className="w-4 h-4" />
                     {station.location}
@@ -75,7 +75,7 @@ export function StationDetailsPage() {
                   { icon: Clock, label: 'Hours', value: station.open24Hours ? '24 Hours' : '6 AM – 10 PM' },
                 ].map((stat) => (
                   <div key={stat.label} className="p-3 rounded-xl bg-ink-800/50 border border-white/5">
-                    <stat.icon className="w-5 h-5 text-electric-400 mb-1.5" />
+                    <stat.icon className="w-5 h-5 text-acid mb-1.5" />
                     <p className="font-display font-semibold text-white text-sm">{stat.value}</p>
                     <p className="text-xs text-ink-400">{stat.label}</p>
                   </div>
@@ -97,9 +97,9 @@ export function StationDetailsPage() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          charger.type === 'Ultra-Fast' ? 'bg-electric-500/15' : charger.type === 'Fast' ? 'bg-electric-500/10' : 'bg-white/5'
+                          charger.type === 'Ultra-Fast' ? 'bg-acid/15' : charger.type === 'Fast' ? 'bg-acid/10' : 'bg-white/5'
                         }`}>
-                          <Zap className={`w-5 h-5 ${charger.type === 'Ultra-Fast' ? 'text-electric-400' : 'text-electric-400'}`} />
+                          <Zap className={`w-5 h-5 ${charger.type === 'Ultra-Fast' ? 'text-acid' : 'text-acid'}`} />
                         </div>
                         <div>
                           <p className="font-medium text-ink-100 text-sm">{charger.type} Charger</p>
@@ -107,7 +107,7 @@ export function StationDetailsPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`font-semibold text-sm ${charger.availablePorts > 0 ? 'text-electric-400' : 'text-danger-400'}`}>
+                        <p className={`font-semibold text-sm ${charger.availablePorts > 0 ? 'text-acid' : 'text-danger-400'}`}>
                           {charger.availablePorts} / {charger.totalPorts}
                         </p>
                         <p className="text-xs text-ink-400">ports available</p>
@@ -117,7 +117,7 @@ export function StationDetailsPage() {
                       {Array.from({ length: charger.totalPorts }).map((_, j) => (
                         <div
                           key={j}
-                          className={`flex-1 h-1.5 rounded-full ${j < charger.availablePorts ? 'bg-electric-400' : 'bg-ink-600'}`}
+                          className={`flex-1 h-1.5 rounded-full ${j < charger.availablePorts ? 'bg-acid' : 'bg-ink-600'}`}
                         />
                       ))}
                     </div>
@@ -142,7 +142,7 @@ export function StationDetailsPage() {
                   const Icon = amenityIcons[amenity] || CheckCircle2;
                   return (
                     <div key={amenity} className="flex items-center gap-2 p-3 rounded-xl bg-ink-800/50 border border-white/5">
-                      <Icon className="w-4 h-4 text-electric-400" />
+                      <Icon className="w-4 h-4 text-acid" />
                       <span className="text-sm text-ink-200">{amenity}</span>
                     </div>
                   );
@@ -180,7 +180,7 @@ export function StationDetailsPage() {
               <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-ink-400">Operating Status</span>
-                  <span className={station.status === 'Available' ? 'text-electric-400 font-medium' : station.status === 'Limited' ? 'text-amber-400 font-medium' : 'text-danger-400 font-medium'}>
+                  <span className={station.status === 'Available' ? 'text-acid font-medium' : station.status === 'Limited' ? 'text-amber-400 font-medium' : 'text-danger-400 font-medium'}>
                     {station.status}
                   </span>
                 </div>
@@ -192,7 +192,7 @@ export function StationDetailsPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-ink-400">Available Now</span>
-                  <span className="text-electric-400 font-medium">
+                  <span className="text-acid font-medium">
                     {station.chargers.reduce((s, c) => s + c.availablePorts, 0)}
                   </span>
                 </div>
@@ -203,9 +203,9 @@ export function StationDetailsPage() {
               </div>
 
               {!user && (
-                <div className="mt-6 p-3 rounded-xl bg-electric-500/10 border border-electric-500/20 text-center">
+                <div className="mt-6 p-3 rounded-xl bg-acid/10 border border-acid/20 text-center">
                   <p className="text-xs text-ink-300 mb-2">Sign up to save reservations</p>
-                  <button onClick={() => navigate('login')} className="text-xs text-electric-400 font-medium hover:underline">
+                  <button onClick={() => navigate('login')} className="text-xs text-acid font-medium hover:underline">
                     Get Started →
                   </button>
                 </div>

@@ -50,7 +50,7 @@ export function Navbar() {
                 onClick={() => handleNav(item.page)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   page === item.page
-                    ? 'text-electric-400 bg-electric-500/10'
+                    ? 'text-acid bg-acid/10'
                     : 'text-ink-300 hover:text-ink-100 hover:bg-white/5'
                 }`}
               >
@@ -112,7 +112,7 @@ export function Navbar() {
                     onClick={() => handleNav(item.page)}
                     className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                       page === item.page
-                        ? 'text-electric-400 bg-electric-500/10'
+                        ? 'text-acid bg-acid/10'
                         : 'text-ink-300 hover:text-ink-100 hover:bg-white/5'
                     }`}
                   >

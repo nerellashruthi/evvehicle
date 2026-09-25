@@ -4,7 +4,7 @@ import type { Station } from '@/types';
 import { useApp } from '@/context/AppContext';
 
 const statusColors: Record<string, string> = {
-  Available: 'bg-electric-400',
+  Available: 'bg-acid',
   Occupied: 'bg-danger-400',
   Limited: 'bg-amber-400',
 };
@@ -31,7 +31,7 @@ export function MapMock({
         <svg className="w-full h-full" preserveAspectRatio="none">
           <defs>
             <radialGradient id="mapGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="rgba(0, 232, 101, 0.06)" />
+              <stop offset="0%" stopColor="rgba(237, 255, 57, 0.06)" />
               <stop offset="100%" stopColor="transparent" />
             </radialGradient>
           </defs>
@@ -39,7 +39,7 @@ export function MapMock({
 
           <path
             d="M 10% 30% Q 30% 10% 50% 25% T 90% 40%"
-            stroke="rgba(0, 232, 101, 0.15)"
+            stroke="rgba(237, 255, 57, 0.15)"
             strokeWidth="2"
             fill="none"
             strokeDasharray="6 4"
@@ -72,7 +72,7 @@ export function MapMock({
         >
           <div className="relative">
             {selectedStation?.id === station.id && (
-              <div className="absolute -inset-3 rounded-full bg-electric-500/20 animate-ping" />
+              <div className="absolute -inset-3 rounded-full bg-acid/20 animate-ping" />
             )}
             <div className={`w-3 h-3 rounded-full ${statusColors[station.status]} shadow-glow`} />
             <div className={`absolute inset-0 rounded-full ${statusColors[station.status]} animate-pulse-glow opacity-50`} />
@@ -88,13 +88,13 @@ export function MapMock({
       ))}
 
       <div className="absolute top-4 left-4 glass px-3 py-2 flex items-center gap-2 text-xs text-ink-300">
-        <Navigation className="w-3.5 h-3.5 text-electric-400" />
+        <Navigation className="w-3.5 h-3.5 text-acid" />
         <span>Hyderabad Region</span>
       </div>
 
       <div className="absolute bottom-4 right-4 glass px-3 py-2 flex items-center gap-3 text-xs">
         {[
-          { label: 'Available', color: 'bg-electric-400' },
+          { label: 'Available', color: 'bg-acid' },
           { label: 'Limited', color: 'bg-amber-400' },
           { label: 'Occupied', color: 'bg-danger-400' },
         ].map((item) => (

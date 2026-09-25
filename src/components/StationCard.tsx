@@ -4,7 +4,7 @@ import type { Station } from '@/types';
 import { useApp } from '@/context/AppContext';
 
 const statusConfig = {
-  Available: { color: 'text-electric-400', bg: 'bg-electric-500/10', border: 'border-electric-500/30', dot: 'bg-electric-400' },
+  Available: { color: 'text-acid', bg: 'bg-acid/10', border: 'border-acid/30', dot: 'bg-acid' },
   Occupied: { color: 'text-danger-400', bg: 'bg-danger-500/10', border: 'border-danger-500/30', dot: 'bg-danger-400' },
   Limited: { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', dot: 'bg-amber-400' },
 };
@@ -26,7 +26,7 @@ export function StationCard({ station, index = 0 }: { station: Station; index?: 
     >
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="font-display font-semibold text-white text-base group-hover:text-electric-400 transition-colors">
+          <h3 className="font-display font-semibold text-white text-base group-hover:text-acid transition-colors">
             {station.name}
           </h3>
           <div className="flex items-center gap-1 mt-1 text-xs text-ink-400">
@@ -46,7 +46,7 @@ export function StationCard({ station, index = 0 }: { station: Station; index?: 
           <span>{station.distanceKm} km</span>
         </div>
         <div className="flex items-center gap-1 text-ink-300">
-          <Zap className="w-3.5 h-3.5 text-electric-400" />
+          <Zap className="w-3.5 h-3.5 text-acid" />
           <span>{maxSpeed} kW</span>
         </div>
         {station.open24Hours && (
@@ -62,7 +62,7 @@ export function StationCard({ station, index = 0 }: { station: Station; index?: 
           <div key={i} className="flex items-center justify-between text-xs">
             <span className="text-ink-300">{c.type}</span>
             <div className="flex items-center gap-2">
-              <span className={c.availablePorts > 0 ? 'text-electric-400 font-medium' : 'text-danger-400'}>
+              <span className={c.availablePorts > 0 ? 'text-acid font-medium' : 'text-danger-400'}>
                 {c.availablePorts}/{c.totalPorts}
               </span>
               <span className="text-ink-500">available</span>
@@ -85,7 +85,7 @@ export function StationCard({ station, index = 0 }: { station: Station; index?: 
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); selectStation(station); navigate('station-details'); }}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-electric-500/10 text-electric-400 border border-electric-500/20 hover:bg-electric-500/20 transition-all"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-acid/10 text-acid border border-acid/20 hover:bg-acid/20 transition-all"
           >
             Details
           </button>

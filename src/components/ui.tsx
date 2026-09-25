@@ -7,7 +7,7 @@ export function SectionLabel({ children }: { children: ReactNode }) {
 
 export function SectionHeading({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <h2 className={`font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-white text-balance ${className}`}>
+    <h2 className={`font-display font-medium text-3xl sm:text-4xl lg:text-5xl text-white text-balance ${className}`}>
       {children}
     </h2>
   );
@@ -39,7 +39,7 @@ export function Reveal({
 
 export function StatusBadge({ status }: { status: 'Available' | 'Occupied' | 'Limited' }) {
   const config = {
-    Available: { color: 'text-electric-400', bg: 'bg-electric-500/10', border: 'border-electric-500/30', dot: 'bg-electric-400' },
+    Available: { color: 'text-acid', bg: 'bg-acid/10', border: 'border-acid/30', dot: 'bg-acid' },
     Occupied: { color: 'text-danger-400', bg: 'bg-danger-500/10', border: 'border-danger-500/30', dot: 'bg-danger-400' },
     Limited: { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', dot: 'bg-amber-400' },
   };

@@ -25,13 +25,13 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-ink-200 mb-4">Navigation</h4>
+            <h4 className="text-sm font-medium text-ink-200 mb-4">Navigation</h4>
             <ul className="space-y-2">
               {footerNav.map((item) => (
                 <li key={item.page}>
                   <button
                     onClick={() => navigate(item.page)}
-                    className="text-sm text-ink-400 hover:text-electric-400 transition-colors"
+                    className="text-sm text-ink-400 hover:text-acid transition-colors"
                   >
                     {item.label}
                   </button>
@@ -41,7 +41,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-ink-200 mb-4">The Four Modules</h4>
+            <h4 className="text-sm font-medium text-ink-200 mb-4">The Four Modules</h4>
             <ul className="space-y-2 text-sm text-ink-400">
               <li>📍 Find — Discover nearby charging stations</li>
               <li>⚡ Check — Real-time charger availability</li>

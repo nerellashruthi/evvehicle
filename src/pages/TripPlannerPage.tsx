@@ -62,7 +62,7 @@ export function TripPlannerPage() {
                 <div>
                   <label className="text-xs font-medium text-ink-300 mb-1.5 block">Starting Location</label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-electric-400" />
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-acid" />
                     <input
                       type="text"
                       value={from}
@@ -76,7 +76,7 @@ export function TripPlannerPage() {
                 <div>
                   <label className="text-xs font-medium text-ink-300 mb-1.5 block">Destination</label>
                   <div className="relative">
-                    <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-electric-400" />
+                    <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-acid" />
                     <input
                       type="text"
                       value={to}
@@ -90,28 +90,28 @@ export function TripPlannerPage() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-ink-300">Current Battery</label>
-                    <span className="text-sm font-semibold text-electric-400">{battery}%</span>
+                    <span className="text-sm font-semibold text-acid">{battery}%</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <BatteryCharging className="w-5 h-5 text-electric-400 shrink-0" />
+                    <BatteryCharging className="w-5 h-5 text-acid shrink-0" />
                     <input
                       type="range"
                       min="5"
                       max="100"
                       value={battery}
                       onChange={(e) => setBattery(Number(e.target.value))}
-                      className="flex-1 accent-electric-500"
+                      className="flex-1 accent-acid"
                     />
                   </div>
                   <div className="mt-1.5 h-1.5 rounded-full bg-ink-700 overflow-hidden">
-                    <div className="h-full bg-electric-400 rounded-full transition-all" style={{ width: `${battery}%` }} />
+                    <div className="h-full bg-acid rounded-full transition-all" style={{ width: `${battery}%` }} />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-ink-300 mb-1.5 block">Vehicle Range (km)</label>
                   <div className="relative">
-                    <Route className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-electric-400" />
+                    <Route className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-acid" />
                     <input
                       type="number"
                       value={range}
@@ -125,7 +125,7 @@ export function TripPlannerPage() {
                 <div>
                   <label className="text-xs font-medium text-ink-300 mb-1.5 block">Vehicle Model (optional)</label>
                   <div className="relative">
-                    <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-electric-400" />
+                    <Car className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-acid" />
                     <input
                       type="text"
                       value={vehicleModel}
@@ -159,7 +159,7 @@ export function TripPlannerPage() {
 
               <div className="mt-6 p-3 rounded-xl bg-ink-800/50 border border-white/5">
                 <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-electric-400 shrink-0 mt-0.5" />
+                  <Info className="w-4 h-4 text-acid shrink-0 mt-0.5" />
                   <p className="text-xs text-ink-400">
                     Route information is estimated based on your battery and vehicle range. Actual results may vary.
                   </p>
@@ -179,8 +179,8 @@ export function TripPlannerPage() {
                   exit={{ opacity: 0 }}
                   className="glass p-12 text-center"
                 >
-                  <div className="w-16 h-16 rounded-full bg-electric-500/10 border-2 border-electric-500/20 flex items-center justify-center mx-auto mb-4">
-                    <Loader className="w-8 h-8 text-electric-400 animate-spin" />
+                  <div className="w-16 h-16 rounded-full bg-acid/10 border-2 border-acid/20 flex items-center justify-center mx-auto mb-4">
+                    <Loader className="w-8 h-8 text-acid animate-spin" />
                   </div>
                   <p className="text-ink-300">Calculating optimal route and charging stops...</p>
                 </motion.div>
@@ -212,7 +212,7 @@ export function TripPlannerPage() {
                   {/* Route Summary */}
                   <div className="glass p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="font-display font-bold text-white text-xl">Your Trip</h3>
+                      <h3 className="font-display font-medium text-white text-xl">Your Trip</h3>
                       <span className="text-xs text-ink-400">{from} → {to}</span>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
@@ -222,8 +222,8 @@ export function TripPlannerPage() {
                         { icon: Zap, label: 'Charging Stops', value: `${plan.chargingStops}` },
                       ].map((stat) => (
                         <div key={stat.label} className="text-center p-4 rounded-xl bg-ink-800/50 border border-white/5">
-                          <stat.icon className="w-6 h-6 text-electric-400 mx-auto mb-2" />
-                          <p className="font-display font-bold text-white text-xl">{stat.value}</p>
+                          <stat.icon className="w-6 h-6 text-acid mx-auto mb-2" />
+                          <p className="font-display font-medium text-white text-xl">{stat.value}</p>
                           <p className="text-xs text-ink-400">{stat.label}</p>
                         </div>
                       ))}
@@ -239,7 +239,7 @@ export function TripPlannerPage() {
                           <TimelineStop stop={stop} isLast={i === plan.stops.length - 1} />
                           {i < plan.stops.length - 1 && (
                             <div className="flex justify-center py-1">
-                              <div className="w-0.5 h-6 bg-electric-500/20 rounded-full" />
+                              <div className="w-0.5 h-6 bg-acid/20 rounded-full" />
                             </div>
                           )}
                         </div>
@@ -250,8 +250,8 @@ export function TripPlannerPage() {
                   {/* Info */}
                   <div className="glass p-5">
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-electric-500/10 flex items-center justify-center shrink-0">
-                        <Info className="w-4 h-4 text-electric-400" />
+                      <div className="w-8 h-8 rounded-lg bg-acid/10 flex items-center justify-center shrink-0">
+                        <Info className="w-4 h-4 text-acid" />
                       </div>
                       <p className="text-sm text-ink-300">
                         Charging stops are recommended because your estimated battery level may become low before the next suitable charging point. Charging to 80% optimizes for speed and battery health.
@@ -279,10 +279,10 @@ export function TripPlannerPage() {
 
 function TimelineStop({ stop, isLast }: { stop: TripPlan['stops'][number]; isLast: boolean }) {
   const config = {
-    start: { icon: MapPin, color: 'text-electric-400', bg: 'bg-electric-500/15 border-electric-500/30' },
+    start: { icon: MapPin, color: 'text-acid', bg: 'bg-acid/15 border-acid/30' },
     drive: { icon: Navigation, color: 'text-ink-300', bg: 'bg-ink-800/50 border-white/5' },
-    charge: { icon: Zap, color: 'text-electric-400', bg: 'bg-electric-500/10 border-electric-500/20' },
-    destination: { icon: MapPin, color: 'text-electric-400', bg: 'bg-electric-500/15 border-electric-500/30' },
+    charge: { icon: Zap, color: 'text-acid', bg: 'bg-acid/10 border-acid/20' },
+    destination: { icon: MapPin, color: 'text-acid', bg: 'bg-acid/15 border-acid/30' },
   };
   const c = config[stop.type];
 
@@ -293,7 +293,7 @@ function TimelineStop({ stop, isLast }: { stop: TripPlan['stops'][number]; isLas
       transition={{ delay: 0.1 }}
       className={`flex items-start gap-3 p-4 rounded-xl border ${c.bg}`}
     >
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stop.isCharging ? 'bg-electric-500/15' : 'bg-ink-800'}`}>
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stop.isCharging ? 'bg-acid/15' : 'bg-ink-800'}`}>
         <c.icon className={`w-5 h-5 ${c.color}`} />
       </div>
       <div className="flex-1 min-w-0">
@@ -303,9 +303,9 @@ function TimelineStop({ stop, isLast }: { stop: TripPlan['stops'][number]; isLas
         )}
         {stop.chargerType && (
           <div className="flex items-center gap-2 mt-1.5 text-xs">
-            <span className="text-ink-400">Charger: <span className="text-electric-400">{stop.chargerType}</span></span>
+            <span className="text-ink-400">Charger: <span className="text-acid">{stop.chargerType}</span></span>
             {stop.chargeDuration && (
-              <span className="text-ink-400">Duration: <span className="text-electric-400">{stop.chargeDuration}</span></span>
+              <span className="text-ink-400">Duration: <span className="text-acid">{stop.chargeDuration}</span></span>
             )}
           </div>
         )}
@@ -314,10 +314,10 @@ function TimelineStop({ stop, isLast }: { stop: TripPlan['stops'][number]; isLas
         )}
         {stop.batteryAtStop !== undefined && (
           <div className="flex items-center gap-1.5 mt-2">
-            <BatteryCharging className="w-3.5 h-3.5 text-electric-400" />
+            <BatteryCharging className="w-3.5 h-3.5 text-acid" />
             <div className="flex-1 h-1.5 rounded-full bg-ink-700 overflow-hidden max-w-[100px]">
               <div
-                className={`h-full rounded-full ${stop.batteryAtStop < 20 ? 'bg-danger-400' : 'bg-electric-400'}`}
+                className={`h-full rounded-full ${stop.batteryAtStop < 20 ? 'bg-danger-400' : 'bg-acid'}`}
                 style={{ width: `${stop.batteryAtStop}%` }}
               />
             </div>

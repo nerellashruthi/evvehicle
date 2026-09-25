@@ -42,8 +42,8 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-electric-500/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-electric-500/5 rounded-full blur-[100px]" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-acid/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-acid/5 rounded-full blur-[100px]" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -59,7 +59,7 @@ export function LoginPage() {
             <button
               onClick={() => setMode('login')}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                mode === 'login' ? 'bg-electric-500/15 text-electric-400' : 'text-ink-400'
+                mode === 'login' ? 'bg-acid/15 text-acid' : 'text-ink-400'
               }`}
             >
               Login
@@ -67,14 +67,14 @@ export function LoginPage() {
             <button
               onClick={() => setMode('signup')}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                mode === 'signup' ? 'bg-electric-500/15 text-electric-400' : 'text-ink-400'
+                mode === 'signup' ? 'bg-acid/15 text-acid' : 'text-ink-400'
               }`}
             >
               Sign Up
             </button>
           </div>
 
-          <h2 className="font-display font-bold text-2xl text-white mb-1">
+          <h2 className="font-display font-medium text-2xl text-white mb-1">
             {mode === 'login' ? 'Welcome back' : 'Create your account'}
           </h2>
           <p className="text-sm text-ink-400 mb-6">
@@ -157,7 +157,7 @@ export function LoginPage() {
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-xs font-medium text-ink-300">Vehicle Range</label>
-                      <span className="text-sm font-semibold text-electric-400">{vehicleRange} km</span>
+                      <span className="text-sm font-semibold text-acid">{vehicleRange} km</span>
                     </div>
                     <div className="relative">
                       <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
@@ -167,7 +167,7 @@ export function LoginPage() {
                         max="600"
                         value={vehicleRange}
                         onChange={(e) => setVehicleRange(Number(e.target.value))}
-                        className="w-full accent-electric-500 pl-10"
+                        className="w-full accent-acid pl-10"
                       />
                     </div>
                   </div>
@@ -220,7 +220,7 @@ export function LoginPage() {
             className="btn-secondary w-full mt-4"
             disabled={loading}
           >
-            <Zap className="w-4 h-4 text-electric-400" />
+            <Zap className="w-4 h-4 text-acid" />
             Continue as Guest
           </button>
 
