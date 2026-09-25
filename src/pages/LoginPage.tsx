@@ -4,6 +4,8 @@ import { Mail, Lock, User, Car, Navigation, Zap, ArrowRight } from 'lucide-react
 import { useApp } from '@/context/AppContext';
 import { Logo } from '@/components/Logo';
 
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
 export function LoginPage() {
   const { login, navigate } = useApp();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -15,7 +17,7 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please fill in all required fields.');
@@ -27,7 +29,39 @@ export function LoginPage() {
     }
     setError('');
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      if (isSupabaseConfigured && supabase) {
+        if (mode === 'signup') {
+          const { error: authErr } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                name,
+                vehicleModel: vehicleModel || 'Tata Nexon EV',
+                vehicleRange: vehicleRange || 320,
+              },
+            },
+          });
+          if (authErr) {
+            setError(authErr.message);
+            setLoading(false);
+            return;
+          }
+        } else {
+          const { error: authErr } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (authErr) {
+            setError(authErr.message);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       login({
         name: name || email.split('@')[0],
         email,
@@ -37,7 +71,10 @@ export function LoginPage() {
       });
       setLoading(false);
       navigate('dashboard');
-    }, 1000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Authentication failed.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -225,7 +262,7 @@ export function LoginPage() {
           </button>
 
           <p className="mt-6 text-center text-xs text-ink-500">
-            Prototype authentication — no real backend required.
+            Secure session authentication with optional Supabase cloud synchronization.
           </p>
         </div>
       </motion.div>

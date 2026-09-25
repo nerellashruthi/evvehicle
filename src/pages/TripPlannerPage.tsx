@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Navigation, MapPin, BatteryCharging, Zap, Clock, Route,
-  ArrowLeft, ArrowRight, Car, Loader, Info,
+  Car, Loader, Info, AlertCircle,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageHeader } from '@/components/ui';
 import { generateTripPlan } from '@/utils/tripPlanner';
 import { setRecentTrip } from '@/utils/storage';
+import { validateLocation, calculateRouteDistance } from '@/utils/geocoding';
 import type { TripPlan } from '@/types';
 
 export function TripPlannerPage() {
@@ -20,27 +21,92 @@ export function TripPlannerPage() {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [error, setError] = useState('');
+  const [destinationError, setDestinationError] = useState('');
+  const [startError, setStartError] = useState('');
 
-  const handlePlan = () => {
-    if (!from.trim() || !to.trim()) {
-      setError('Please enter both starting location and destination.');
-      return;
-    }
-    if (battery < 5) {
-      setError('Battery too low for trip planning. Please charge first.');
-      return;
-    }
+  const handlePlan = async () => {
+    let hasError = false;
+    setDestinationError('');
+    setStartError('');
     setError('');
+
+    const trimmedFrom = from.trim();
+    const trimmedTo = to.trim();
+
+    if (!trimmedTo) {
+      setDestinationError('Please enter a destination.');
+      hasError = true;
+    }
+
+    if (!trimmedFrom) {
+      setStartError('Please enter a starting location.');
+      hasError = true;
+    }
+
+    if (hasError) {
+      setPlan(null);
+      return;
+    }
+
     setLoading(true);
     setPlan(null);
 
-    setTimeout(() => {
-      const tripDistance = Math.round(280 + Math.random() * 200);
-      const result = generateTripPlan(tripDistance, battery, range, from, to);
-      setPlan(result);
-      setRecentTrip({ from, to, distance: tripDistance, date: new Date().toISOString() });
+    // Validate destination
+    const destValidation = await validateLocation(trimmedTo, 'Destination');
+    if (!destValidation.valid || !destValidation.location) {
+      setDestinationError(
+        destValidation.error ||
+          'Destination not recognized. Please check the spelling or enter a valid city (e.g. Vijayawada).'
+      );
       setLoading(false);
-    }, 1500);
+      return;
+    }
+
+    // Validate starting location
+    const startValidation = await validateLocation(trimmedFrom, 'Starting location');
+    if (!startValidation.valid || !startValidation.location) {
+      setStartError(
+        startValidation.error ||
+          'Starting location not recognized. Please check the spelling or enter a valid city (e.g. Hyderabad).'
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (battery < 5) {
+      setError('Battery too low for trip planning. Please charge first.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Calculate real-world road routing and distance
+      const routeData = await calculateRouteDistance(
+        startValidation.location,
+        destValidation.location
+      );
+
+      const result = generateTripPlan(
+        routeData.distanceKm,
+        battery,
+        range,
+        startValidation.location.name,
+        destValidation.location.name,
+        routeData.drivingDurationMinutes
+      );
+
+      setPlan(result);
+      setRecentTrip({
+        from: startValidation.location.name,
+        to: destValidation.location.name,
+        distance: routeData.distanceKm,
+        date: new Date().toISOString(),
+      });
+    } catch {
+      setError('Unable to calculate route. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,13 +130,28 @@ export function TripPlannerPage() {
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-acid" />
                     <input
+                      id="start-location-input"
                       type="text"
                       value={from}
-                      onChange={(e) => setFrom(e.target.value)}
+                      onChange={(e) => {
+                        setFrom(e.target.value);
+                        if (startError) setStartError('');
+                      }}
                       placeholder="e.g. Hyderabad"
-                      className="input-field pl-10"
+                      className={`input-field pl-10 ${startError ? 'border-danger-500/60 focus:border-danger-500' : ''}`}
                     />
                   </div>
+                  {startError && (
+                    <motion.div
+                      id="start-location-error"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-1.5 flex items-center gap-1.5 text-xs text-danger-400"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{startError}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 <div>
@@ -78,13 +159,28 @@ export function TripPlannerPage() {
                   <div className="relative">
                     <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-acid" />
                     <input
+                      id="destination-input"
                       type="text"
                       value={to}
-                      onChange={(e) => setTo(e.target.value)}
+                      onChange={(e) => {
+                        setTo(e.target.value);
+                        if (destinationError) setDestinationError('');
+                      }}
                       placeholder="e.g. Vijayawada"
-                      className="input-field pl-10"
+                      className={`input-field pl-10 ${destinationError ? 'border-danger-500/60 focus:border-danger-500' : ''}`}
                     />
                   </div>
+                  {destinationError && (
+                    <motion.div
+                      id="destination-error"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-1.5 flex items-center gap-1.5 text-xs text-danger-400"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{destinationError}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 <div>
@@ -142,7 +238,12 @@ export function TripPlannerPage() {
                   </div>
                 )}
 
-                <button onClick={handlePlan} className="btn-primary w-full" disabled={loading}>
+                <button
+                  id="generate-route-btn"
+                  onClick={handlePlan}
+                  className="btn-primary w-full"
+                  disabled={loading}
+                >
                   {loading ? (
                     <>
                       <Loader className="w-4 h-4 animate-spin" />
@@ -161,7 +262,7 @@ export function TripPlannerPage() {
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-acid shrink-0 mt-0.5" />
                   <p className="text-xs text-ink-400">
-                    Route information is estimated based on your battery and vehicle range. Actual results may vary.
+                    Route distances and charging stops are calculated using real geographic routing tailored to your vehicle's range.
                   </p>
                 </div>
               </div>
@@ -182,7 +283,7 @@ export function TripPlannerPage() {
                   <div className="w-16 h-16 rounded-full bg-acid/10 border-2 border-acid/20 flex items-center justify-center mx-auto mb-4">
                     <Loader className="w-8 h-8 text-acid animate-spin" />
                   </div>
-                  <p className="text-ink-300">Calculating optimal route and charging stops...</p>
+                  <p className="text-ink-300">Calculating real-world route and optimal charging stops...</p>
                 </motion.div>
               )}
 
@@ -236,7 +337,7 @@ export function TripPlannerPage() {
                     <div className="space-y-1">
                       {plan.stops.map((stop, i) => (
                         <div key={i}>
-                          <TimelineStop stop={stop} isLast={i === plan.stops.length - 1} />
+                          <TimelineStop stop={stop} />
                           {i < plan.stops.length - 1 && (
                             <div className="flex justify-center py-1">
                               <div className="w-0.5 h-6 bg-acid/20 rounded-full" />
@@ -277,7 +378,7 @@ export function TripPlannerPage() {
   );
 }
 
-function TimelineStop({ stop, isLast }: { stop: TripPlan['stops'][number]; isLast: boolean }) {
+function TimelineStop({ stop }: { stop: TripPlan['stops'][number] }) {
   const config = {
     start: { icon: MapPin, color: 'text-acid', bg: 'bg-acid/15 border-acid/30' },
     drive: { icon: Navigation, color: 'text-ink-300', bg: 'bg-ink-800/50 border-white/5' },

@@ -1,8 +1,7 @@
-import { motion } from 'framer-motion';
 import {
   Search, CheckCircle2, CalendarCheck, Map, ArrowRight,
   Zap, BatteryCharging, Navigation, Clock, Route, Sparkles,
-  Brain, CreditCard, Radio, UserCheck, Star,
+  Brain, CreditCard, Radio, UserCheck,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { Reveal, SectionLabel, SectionHeading } from '@/components/ui';
@@ -436,7 +435,7 @@ function ModulePreview({
           <div className="w-10 h-10 rounded-xl bg-acid/10 border border-acid/20 flex items-center justify-center">
             <Icon className="w-5 h-5 text-acid" />
           </div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-acid">{label}</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-acid">Module {number} · {label}</span>
         </div>
       </Reveal>
       <Reveal delay={0.1}>

@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Search, CheckCircle2, CalendarCheck, Map, ArrowRight } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { Reveal, SectionLabel, SectionHeading } from '@/components/ui';

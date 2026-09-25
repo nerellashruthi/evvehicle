@@ -7,10 +7,11 @@ import { useApp } from '@/context/AppContext';
 import { PageHeader } from '@/components/ui';
 import { stations as stationData, timeSlots } from '@/data/stations';
 import { generateReservationId } from '@/utils/tripPlanner';
+import { syncReservationToBackend } from '@/lib/supabase';
 import type { ChargerType, Reservation } from '@/types';
 
 export function ReservationPage() {
-  const { selectedStation, selectStation, navigate, addReservation, user } = useApp();
+  const { selectedStation, selectStation, navigate, addReservation } = useApp();
   const [step, setStep] = useState(1);
   const [chargerType, setChargerType] = useState<ChargerType>('Fast');
   const [date, setDate] = useState('');
@@ -44,6 +45,7 @@ export function ReservationPage() {
         createdAt: new Date().toISOString(),
       };
       addReservation(reservation);
+      syncReservationToBackend(reservation);
       setConfirmed(reservation);
       setLoading(false);
     }, 1200);

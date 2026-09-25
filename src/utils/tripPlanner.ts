@@ -7,52 +7,67 @@ export function generateTripPlan(
   vehicleRange: number,
   startLocation: string,
   destination: string,
+  estimatedDrivingMinutes?: number
 ): TripPlan {
   const availableRange = (vehicleRange * batteryPercent) / 100;
   const stops: TripStop[] = [];
   let remainingDistance = tripDistanceKm;
   let currentBattery = batteryPercent;
   let currentRange = availableRange;
-  let prevLabel = startLocation || 'Start';
 
   stops.push({
     type: 'start',
     label: startLocation || 'Starting Location',
     distanceFromPrev: 0,
-    batteryAtStop: currentBattery,
+    batteryAtStop: Math.round(currentBattery),
   });
 
   let chargingStops = 0;
-  let driveSegment = Math.min(currentRange * 0.85, remainingDistance);
+
+  // Real-world corridor station matchers
+  const isVijayawadaCorridor =
+    destination.toLowerCase().includes('vijayawada') ||
+    destination.toLowerCase().includes('guntur') ||
+    destination.toLowerCase().includes('amaravati');
+
+  const corridorStations = isVijayawadaCorridor
+    ? stations.filter((s) => s.id.includes('suryapet') || s.id.includes('kodad') || s.id.includes('vijayawada'))
+    : stations;
+
+  // Target charging when battery reaches ~15-20% reserve
+  let driveSegment = Math.min(currentRange * 0.82, remainingDistance);
 
   while (remainingDistance > 0.5) {
     if (driveSegment >= remainingDistance) {
-      stops.push({
-        type: 'drive',
-        label: `Drive ${Math.round(remainingDistance)} km`,
-        distanceFromPrev: Math.round(remainingDistance),
-      });
+      const segmentDistance = Math.round(remainingDistance);
       currentBattery -= (remainingDistance / vehicleRange) * 100;
       currentRange -= remainingDistance;
       remainingDistance = 0;
+
+      stops.push({
+        type: 'drive',
+        label: `Drive ${segmentDistance} km`,
+        distanceFromPrev: segmentDistance,
+      });
       break;
     }
 
+    const segmentDistance = Math.round(driveSegment);
     stops.push({
       type: 'drive',
-      label: `Drive ${Math.round(driveSegment)} km`,
-      distanceFromPrev: Math.round(driveSegment),
+      label: `Drive ${segmentDistance} km`,
+      distanceFromPrev: segmentDistance,
     });
 
     currentBattery -= (driveSegment / vehicleRange) * 100;
     currentRange -= driveSegment;
     remainingDistance -= driveSegment;
 
-    const station = stations[chargingStops % stations.length];
-    const chargerType: ChargerType =
-      currentBattery < 15 ? 'Ultra-Fast' : 'Fast';
+    // Pick appropriate corridor station
+    const station = corridorStations[chargingStops % corridorStations.length] || stations[0];
+    const chargerType: ChargerType = currentBattery < 15 ? 'Ultra-Fast' : 'Fast';
     const chargeDuration =
-      chargerType === 'Ultra-Fast' ? '20 min' : chargerType === 'Fast' ? '35 min' : '50 min';
+      chargerType === 'Ultra-Fast' ? '25 min' : '35 min';
 
     chargingStops++;
 
@@ -63,13 +78,14 @@ export function generateTripPlan(
       stationName: station.name,
       chargerType,
       chargeDuration,
-      batteryAtStop: Math.max(5, Math.round(currentBattery)),
+      batteryAtStop: Math.max(8, Math.round(currentBattery)),
       isCharging: true,
     });
 
+    // Charged to optimal 80% for speed and battery longevity
     currentBattery = 80;
     currentRange = (vehicleRange * 80) / 100;
-    driveSegment = Math.min(currentRange * 0.85, remainingDistance);
+    driveSegment = Math.min(currentRange * 0.82, remainingDistance);
   }
 
   stops.push({
@@ -79,15 +95,15 @@ export function generateTripPlan(
     batteryAtStop: Math.max(5, Math.round(currentBattery)),
   });
 
-  const totalDriveTime = (tripDistanceKm / 60) * 60;
-  const totalChargeTime = chargingStops * 35;
+  const totalDriveTime = estimatedDrivingMinutes ?? Math.round((tripDistanceKm / 65) * 60);
+  const totalChargeTime = chargingStops * 30;
   const totalMinutes = Math.round(totalDriveTime + totalChargeTime);
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
-  const estimatedTime = `${hours} hr ${mins} min`;
+  const estimatedTime = hours > 0 ? `${hours} hr ${mins} min` : `${mins} min`;
 
   return {
-    totalDistance: tripDistanceKm,
+    totalDistance: Math.round(tripDistanceKm),
     estimatedTime,
     chargingStops,
     stops,
@@ -97,7 +113,7 @@ export function generateTripPlan(
 }
 
 export function getEstimatedChargingTime(speedKW: number, batteryPercent: number): string {
-  const time = Math.round((100 - batteryPercent) / (speedKW / 50) * 10);
+  const time = Math.round(((100 - batteryPercent) / (speedKW / 50)) * 10);
   return `${Math.max(15, time)} min`;
 }
 

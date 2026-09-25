@@ -4,7 +4,7 @@ import {
   Search, CheckCircle2, Map, TrendingUp, Clock, ArrowRight,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { PageHeader, Reveal } from '@/components/ui';
+import { PageHeader } from '@/components/ui';
 import { getRecentTrip } from '@/utils/storage';
 
 export function DashboardPage() {
