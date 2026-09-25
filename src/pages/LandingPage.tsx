@@ -8,6 +8,7 @@ import { Reveal, SectionLabel, SectionHeading } from '@/components/ui';
 import { problemCards, benefits, futureFeatures } from '@/data/stations';
 import { MapMock } from '@/components/MapMock';
 import { Hero } from '@/components/landing/Hero';
+import { ChargeNixAICard } from '@/components/ai/ChargeNixAICard';
 
 const moduleIcons = { FIND: Search, CHECK: CheckCircle2, RESERVE: CalendarCheck, PLAN: Map };
 const moduleLabels = {
@@ -45,6 +46,13 @@ export function LandingPage() {
     <div>
       {/* HERO */}
       <Hero />
+
+      {/* AI CHARGING AGENT HERO CARD (SECTION 15) */}
+      <section className="py-8 relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ChargeNixAICard />
+        </div>
+      </section>
 
       {/* PROBLEM */}
       <section className="py-20 lg:py-28">

@@ -1,23 +1,44 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarCheck, CheckCircle2, Calendar, Clock, Zap, ArrowLeft, ArrowRight,
+  CalendarCheck, CheckCircle2, Calendar, Clock, Zap, ArrowLeft, ArrowRight, CreditCard,
+  Navigation,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageHeader } from '@/components/ui';
 import { stations as stationData, timeSlots } from '@/data/stations';
+import type { ChargerType, BookingWithPayment } from '@/types';
 import { generateReservationId } from '@/utils/tripPlanner';
-import { syncReservationToBackend } from '@/lib/supabase';
-import type { ChargerType, Reservation } from '@/types';
+import { parseSlotTimestamps } from '@/services/gracePeriodService';
+import { calculateBreakdown } from '@/utils/payment';
+import {
+  buildGoogleMapsDirectionsUrl,
+  getStationCoordinates,
+  getGrantedUserLocation,
+  openGoogleMaps,
+} from '@/utils/navigation';
 
 export function ReservationPage() {
-  const { selectedStation, selectStation, navigate, addReservation } = useApp();
+  const {
+    selectedStation,
+    selectStation,
+    navigate,
+    setPendingBookingDetails,
+    bookings,
+    addBooking,
+    addReservation,
+    graceConfig,
+    addNotification,
+    userLocation,
+    user,
+  } = useApp();
   const [step, setStep] = useState(1);
   const [chargerType, setChargerType] = useState<ChargerType>('Fast');
   const [date, setDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
-  const [confirmed, setConfirmed] = useState<Reservation | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [paymentChoice, setPaymentChoice] = useState<'ONLINE' | 'PAY_AT_STATION'>('ONLINE');
+  const [confirmedStationBooking, setConfirmedStationBooking] = useState<BookingWithPayment | null>(null);
+  const [navigating, setNavigating] = useState(false);
 
   const station = selectedStation || stationData[0];
 
@@ -31,81 +52,122 @@ export function ReservationPage() {
     };
   });
 
-  const handleConfirm = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const reservation: Reservation = {
-        id: generateReservationId(),
+  const breakdown = calculateBreakdown(chargerType);
+
+  const handleProceedBooking = () => {
+    if (paymentChoice === 'ONLINE') {
+      setPendingBookingDetails({
+        stationId:       station.id,
+        stationName:     station.name,
+        stationLocation: station.location,
+        lat:             station.lat,
+        lng:             station.lng,
+        chargerType,
+        date,
+        time:            timeSlot,
+        dateLabel:       dateOptions.find((d) => d.value === date)?.label || date,
+        paymentChoice:   'ONLINE',
+      });
+      navigate('payment');
+    } else {
+      // Pay at Station flow
+      const bookingId = generateReservationId();
+      const dateLbl = dateOptions.find((d) => d.value === date)?.label || date;
+      const { slotStartTimestamp, slotEndTimestamp, gracePeriodEndTimestamp, startTimeLabel, endTimeLabel } =
+        parseSlotTimestamps(date, timeSlot, graceConfig.gracePeriodMinutes);
+      const isImmediate = Date.now() >= slotStartTimestamp && Date.now() < gracePeriodEndTimestamp;
+
+      const newBooking: BookingWithPayment = {
+        id: bookingId,
         stationId: station.id,
         stationName: station.name,
+        stationLocation: station.location,
+        lat: station.lat,
+        lng: station.lng,
+        chargerType,
+        chargerNumber: 'DC Fast Charger 2',
+        date,
+        time: timeSlot,
+        startTime: startTimeLabel,
+        endTime: endTimeLabel,
+        slotStartTimestamp,
+        slotEndTimestamp,
+        gracePeriodMinutes: graceConfig.gracePeriodMinutes,
+        gracePeriodEndTimestamp,
+        status: isImmediate ? 'GRACE_PERIOD' : 'RESERVED',
+        createdAt: new Date().toISOString(),
+        payment: {
+          transactionId: `STN-${bookingId.slice(-6)}`,
+          method: 'PAY_AT_STATION',
+          methodDetail: 'Pay at Station on Arrival',
+          amount: breakdown.total,
+          status: 'PENDING',
+          paidAt: '',
+          refundStatus: 'NOT_APPLICABLE',
+        },
+        breakdown,
+        originalPaymentAmount: breakdown.total,
+        noShowCharge: 0,
+        refundAmount: 0,
+        refundStatus: 'NOT_APPLICABLE',
+        userName: user?.name || 'EV Driver',
+        userEmail: user?.email || 'user@example.com',
+      };
+
+      addBooking(newBooking);
+      addReservation({
+        id: bookingId,
+        stationId: station.id,
+        stationName: station.name,
+        lat: station.lat,
+        lng: station.lng,
         chargerType,
         date,
         time: timeSlot,
-        status: 'confirmed',
-        createdAt: new Date().toISOString(),
-      };
-      addReservation(reservation);
-      syncReservationToBackend(reservation);
-      setConfirmed(reservation);
-      setLoading(false);
-    }, 1200);
+        status: newBooking.status,
+        createdAt: newBooking.createdAt,
+        startTime: startTimeLabel,
+        endTime: endTimeLabel,
+        slotStartTimestamp,
+        slotEndTimestamp,
+        gracePeriodMinutes: graceConfig.gracePeriodMinutes,
+        gracePeriodEndTimestamp,
+        chargerNumber: 'DC Fast Charger 2',
+      });
+
+      addNotification({
+        id: `NTF-STN-BOOK-${bookingId}-${Date.now()}`,
+        title: 'Pay-at-Station Booking Confirmed',
+        message: `Your slot at ${station.name} is reserved. Please pay ₹${breakdown.total} at the station upon arrival.`,
+        type: 'info',
+        timestamp: new Date().toISOString(),
+        actionLabel: 'View Booking',
+        actionData: { bookingId },
+      });
+
+      setConfirmedStationBooking(newBooking);
+    }
   };
 
-  const reset = () => {
-    setConfirmed(null);
-    setStep(1);
-    setChargerType('Fast');
-    setDate('');
-    setTimeSlot('');
+  const handleNavigateStation = async () => {
+    if (!confirmedStationBooking) return;
+    setNavigating(true);
+    try {
+      const coords = getStationCoordinates({
+        stationId: confirmedStationBooking.stationId,
+        stationName: confirmedStationBooking.stationName,
+        lat: confirmedStationBooking.lat,
+        lng: confirmedStationBooking.lng,
+      });
+      if (coords) {
+        const origin = (await getGrantedUserLocation()) ?? userLocation ?? undefined;
+        const url = buildGoogleMapsDirectionsUrl(coords, origin);
+        openGoogleMaps(url);
+      }
+    } finally {
+      setNavigating(false);
+    }
   };
-
-  if (confirmed) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass-strong p-8 max-w-md w-full text-center"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-            className="w-20 h-20 rounded-full bg-acid/15 border-2 border-acid/30 flex items-center justify-center mx-auto mb-6"
-          >
-            <CheckCircle2 className="w-10 h-10 text-acid" />
-          </motion.div>
-
-          <h2 className="font-display font-medium text-2xl text-white mb-2">Reservation Confirmed</h2>
-          <p className="text-ink-400 text-sm mb-6">Your charging slot has been booked successfully.</p>
-
-          <div className="space-y-3 text-left p-5 rounded-xl bg-ink-800/50 border border-white/5 mb-6">
-            {[
-              { label: 'Station', value: confirmed.stationName },
-              { label: 'Charger Type', value: confirmed.chargerType },
-              { label: 'Date', value: dateOptions.find((d) => d.value === confirmed.date)?.label || confirmed.date },
-              { label: 'Time', value: confirmed.time },
-              { label: 'Reservation ID', value: confirmed.id },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between text-sm">
-                <span className="text-ink-400">{item.label}</span>
-                <span className="text-ink-100 font-medium">{item.value}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button onClick={() => navigate('dashboard')} className="btn-primary flex-1">
-              View Dashboard
-            </button>
-            <button onClick={reset} className="btn-secondary flex-1">
-              New Reservation
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
 
   const steps = ['Station', 'Charger', 'Date', 'Time', 'Confirm'];
 
@@ -275,8 +337,14 @@ export function ReservationPage() {
             >
               <h3 className="font-display font-semibold text-white text-lg mb-4">Select a Time Slot</h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                {timeSlots.map((slot, i) => {
-                  const isBooked = i === 5 || i === 11;
+                {timeSlots.map((slot) => {
+                  const isBooked = bookings.some(
+                    (b) =>
+                      b.stationId === station.id &&
+                      b.date === date &&
+                      (b.time.includes(slot) || slot.includes(b.time) || b.startTime === slot) &&
+                      ['RESERVED', 'GRACE_PERIOD', 'CHARGING', 'confirmed'].includes(b.status)
+                  );
                   return (
                     <button
                       key={slot}
@@ -284,13 +352,18 @@ export function ReservationPage() {
                       disabled={isBooked}
                       className={`px-3 py-3 rounded-xl text-center text-sm font-medium transition-all ${
                         timeSlot === slot
-                          ? 'bg-acid text-ink-950'
+                          ? 'bg-acid text-ink-950 font-bold'
                           : isBooked
-                          ? 'bg-ink-700/50 text-ink-500 line-through cursor-not-allowed'
-                          : 'bg-ink-800/50 border border-white/10 text-ink-200 hover:border-acid/30'
+                          ? 'bg-ink-800/40 text-ink-500 border border-white/5 cursor-not-allowed opacity-60'
+                          : 'bg-ink-800/50 border border-white/10 text-ink-200 hover:border-acid/30 cursor-pointer'
                       }`}
                     >
-                      {slot}
+                      <span>{slot}</span>
+                      {isBooked && (
+                        <span className="block text-[9px] uppercase font-bold text-rose-400/80 tracking-wide mt-0.5">
+                          Reserved
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -306,7 +379,7 @@ export function ReservationPage() {
             </motion.div>
           )}
 
-          {/* Step 5: Confirm */}
+          {/* Step 5: Choose Payment Method & Confirm */}
           {step === 5 && (
             <motion.div
               key="step5"
@@ -315,41 +388,172 @@ export function ReservationPage() {
               exit={{ opacity: 0, x: -20 }}
               className="glass p-6"
             >
-              <h3 className="font-display font-semibold text-white text-lg mb-4">Confirm Reservation</h3>
-              <div className="space-y-3 p-5 rounded-xl bg-ink-800/50 border border-white/5 mb-6">
-                {[
-                  { icon: CalendarCheck, label: 'Station', value: station.name },
-                  { icon: Zap, label: 'Charger Type', value: chargerType },
-                  { icon: Calendar, label: 'Date', value: dateOptions.find((d) => d.value === date)?.label || date },
-                  { icon: Clock, label: 'Time', value: timeSlot },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-ink-400">
-                      <item.icon className="w-4 h-4 text-acid" />
-                      {item.label}
+              {confirmedStationBooking ? (
+                /* ── Pay at Station Confirmed Screen ── */
+                <div>
+                  <div className="text-center mb-6">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                     </div>
-                    <span className="text-ink-100 font-medium">{item.value}</span>
+                    <h3 className="font-display font-bold text-white text-xl">Booking confirmed!</h3>
+                    <p className="text-ink-300 text-sm mt-1">Please pay at the station after you arrive.</p>
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-between">
-                <button onClick={() => setStep(4)} className="btn-secondary">
-                  <ArrowLeft className="w-4 h-4" /> Back
-                </button>
-                <button onClick={handleConfirm} className="btn-primary" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-ink-950 border-t-transparent rounded-full animate-spin" />
-                      Confirming...
-                    </>
-                  ) : (
-                    <>
+
+                  <div className="space-y-3 p-5 rounded-xl bg-ink-800/60 border border-white/10 mb-6">
+                    {[
+                      { label: 'Booking ID',      value: confirmedStationBooking.id, mono: true },
+                      { label: 'Station',         value: confirmedStationBooking.stationName, highlight: true },
+                      { label: 'Charger',         value: `${confirmedStationBooking.chargerNumber || 'Charger 2'} (${confirmedStationBooking.chargerType})` },
+                      { label: 'Date',            value: dateOptions.find((d) => d.value === date)?.label || confirmedStationBooking.date },
+                      { label: 'Start Time',      value: confirmedStationBooking.startTime || confirmedStationBooking.time },
+                      { label: 'End Time',        value: confirmedStationBooking.endTime || 'Est. 45 min' },
+                      { label: 'Amount',          value: `₹${confirmedStationBooking.payment.amount}` },
+                      { label: 'Payment Method',  value: 'Pay at Station' },
+                      { label: 'Payment Status',  value: 'Pending', badge: true },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center justify-between text-sm gap-2">
+                        <span className="text-ink-400 shrink-0">{item.label}</span>
+                        {item.badge ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-400/15 text-amber-300 border border-amber-400/30">
+                            {item.value}
+                          </span>
+                        ) : (
+                          <span className={`font-medium text-right ${
+                            item.highlight ? 'text-white font-semibold' :
+                            item.mono ? 'font-mono text-ink-200 text-xs' : 'text-ink-100'
+                          }`}>
+                            {item.value}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Navigation CTA */}
+                  <div className="space-y-3">
+                    <button
+                      id="navigate-to-station-btn"
+                      onClick={handleNavigateStation}
+                      disabled={navigating}
+                      className="w-full py-3.5 px-6 rounded-xl bg-acid text-ink-950 font-display font-bold text-base flex items-center justify-center gap-2.5 shadow-lg shadow-acid/20 hover:bg-acid-400 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-75"
+                    >
+                      {navigating ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-ink-950 border-t-transparent rounded-full animate-spin" />
+                          <span>Preparing Navigation...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Navigation className="w-5 h-5 text-ink-950 fill-current" />
+                          <span>Navigate to Station</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => navigate('my-bookings')}
+                      className="w-full py-3 px-6 rounded-xl bg-ink-800 hover:bg-ink-700 text-ink-200 font-medium text-sm border border-white/10 transition-colors"
+                    >
+                      View in My Bookings
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* ── Review & Payment Method Choice ── */
+                <div>
+                  <h3 className="font-display font-semibold text-white text-lg mb-1">Review Booking Details</h3>
+                  <p className="text-xs text-ink-400 mb-4">Confirm your slot and select your preferred payment mode.</p>
+
+                  <div className="space-y-2.5 p-4 rounded-xl bg-ink-800/40 border border-white/5 mb-6">
+                    {[
+                      { icon: CalendarCheck, label: 'Station',      value: station.name },
+                      { icon: Zap,          label: 'Charger Type', value: chargerType },
+                      { icon: Calendar,     label: 'Date',         value: dateOptions.find((d) => d.value === date)?.label || date },
+                      { icon: Clock,        label: 'Time',         value: timeSlot },
+                      { icon: CreditCard,   label: 'Amount',       value: `₹${breakdown.total}` },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 text-ink-400">
+                          <item.icon className="w-3.5 h-3.5 text-acid" />
+                          {item.label}
+                        </div>
+                        <span className="text-ink-100 font-semibold">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Choose Payment Method */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-semibold text-white mb-3">Choose Payment Method</label>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {/* Option 1: Pay Online */}
+                      <button
+                        type="button"
+                        onClick={() => setPaymentChoice('ONLINE')}
+                        className={`p-4 rounded-xl text-left transition-all border flex flex-col justify-between cursor-pointer ${
+                          paymentChoice === 'ONLINE'
+                            ? 'bg-acid/10 border-acid/50 shadow-md shadow-acid/10 ring-1 ring-acid/40'
+                            : 'bg-ink-800/50 border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                              paymentChoice === 'ONLINE' ? 'border-acid bg-acid' : 'border-ink-500 bg-transparent'
+                            }`}>
+                              {paymentChoice === 'ONLINE' && <div className="w-1.5 h-1.5 rounded-full bg-ink-950" />}
+                            </div>
+                            <span className="font-semibold text-white text-sm">Pay Online</span>
+                          </div>
+                          <span className="font-display font-bold text-acid text-base">₹{breakdown.total}</span>
+                        </div>
+                        <p className="text-xs text-ink-300 pl-6 leading-relaxed">
+                          Pay now and reserve your charging slot. Secure online payment.
+                        </p>
+                      </button>
+
+                      {/* Option 2: Pay at Station */}
+                      <button
+                        type="button"
+                        onClick={() => setPaymentChoice('PAY_AT_STATION')}
+                        className={`p-4 rounded-xl text-left transition-all border flex flex-col justify-between cursor-pointer ${
+                          paymentChoice === 'PAY_AT_STATION'
+                            ? 'bg-acid/10 border-acid/50 shadow-md shadow-acid/10 ring-1 ring-acid/40'
+                            : 'bg-ink-800/50 border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                              paymentChoice === 'PAY_AT_STATION' ? 'border-acid bg-acid' : 'border-ink-500 bg-transparent'
+                            }`}>
+                              {paymentChoice === 'PAY_AT_STATION' && <div className="w-1.5 h-1.5 rounded-full bg-ink-950" />}
+                            </div>
+                            <span className="font-semibold text-white text-sm">Pay at Station</span>
+                          </div>
+                          <span className="font-display font-bold text-ink-200 text-base">₹{breakdown.total}</span>
+                        </div>
+                        <p className="text-xs text-ink-300 pl-6 leading-relaxed">
+                          Reserve your slot and pay at the charging station after you arrive.
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2">
+                    <button onClick={() => setStep(4)} className="btn-secondary">
+                      <ArrowLeft className="w-4 h-4" /> Back
+                    </button>
+                    <button
+                      onClick={handleProceedBooking}
+                      className="btn-primary"
+                    >
                       <CheckCircle2 className="w-4 h-4" />
-                      Confirm Reservation
-                    </>
-                  )}
-                </button>
-              </div>
+                      Confirm Booking
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

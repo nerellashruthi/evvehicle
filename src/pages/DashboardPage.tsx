@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   BatteryCharging, Navigation, Zap, CalendarCheck, Route,
-  Search, CheckCircle2, Map, TrendingUp, Clock, ArrowRight,
+  Search, CheckCircle2, Map, TrendingUp, Clock, ArrowRight, Receipt,
+  Sparkles, User, FileText, Headphones
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageHeader } from '@/components/ui';
 import { getRecentTrip } from '@/utils/storage';
+import { DashboardSupportTickets } from '@/components/support/DashboardSupportTickets';
 
 export function DashboardPage() {
-  const { user, reservations, navigate, liveStations, selectedStation } = useApp();
+  const { user, reservations, navigate, liveStations, selectedStation, tickets } = useApp();
+  const [activeTab, setActiveTab] = useState<'driver' | 'tickets'>('driver');
   const recentTrip = getRecentTrip();
 
   const battery = user?.batteryPercent ?? 72;
@@ -17,22 +21,62 @@ export function DashboardPage() {
   const nearestStation = liveStations[0];
 
   const quickActions = [
-    { icon: Search, label: 'Find Charger', page: 'stations' as const, color: 'text-acid' },
-    { icon: CheckCircle2, label: 'Check Availability', page: 'stations' as const, color: 'text-amber-400' },
-    { icon: CalendarCheck, label: 'Reserve Slot', page: 'reserve' as const, color: 'text-acid' },
-    { icon: Map, label: 'Plan Trip', page: 'trip-planner' as const, color: 'text-acid' },
+    { icon: Sparkles,      label: 'AI Agent',           page: 'ai-agent' as const,     color: 'text-acid' },
+    { icon: FileText,      label: 'Help & Tickets',     page: 'support' as const,      color: 'text-acid' },
+    { icon: Search,        label: 'Find Charger',       page: 'stations' as const,     color: 'text-acid' },
+    { icon: CheckCircle2,  label: 'Check Availability', page: 'stations' as const,     color: 'text-amber-400' },
+    { icon: CalendarCheck, label: 'Reserve Slot',       page: 'reserve' as const,      color: 'text-acid' },
+    { icon: Map,           label: 'Plan Trip',          page: 'trip-planner' as const, color: 'text-acid' },
+    { icon: Receipt,       label: 'My Bookings',        page: 'my-bookings' as const,  color: 'text-acid' },
   ];
 
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <PageHeader
-          label="Dashboard"
-          title={`Welcome back${user?.name ? `, ${user.name.split(' ')[0]}` : ''}`}
-          subtitle="Your EV charging overview at a glance."
-        />
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6">
+          <PageHeader
+            label="Dashboard"
+            title={`Welcome back${user?.name ? `, ${user.name.split(' ')[0]}` : ''}`}
+            subtitle={
+              activeTab === 'driver'
+                ? "Your EV charging overview at a glance."
+                : "Real-time ticket triage, technician assignment & SLA tracking."
+            }
+          />
+          
+          {/* Tab Switcher */}
+          <div className="inline-flex p-1.5 rounded-2xl bg-ink-900 border border-white/10 self-start sm:self-auto shrink-0 mb-6 sm:mb-8">
+            <button
+              onClick={() => setActiveTab('driver')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'driver'
+                  ? 'bg-acid text-ink-950 shadow-md shadow-acid/20'
+                  : 'text-ink-400 hover:text-white'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              Driver Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('tickets')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'tickets'
+                  ? 'bg-acid text-ink-950 shadow-md shadow-acid/20'
+                  : 'text-ink-400 hover:text-white'
+              }`}
+            >
+              <Headphones className="w-3.5 h-3.5" />
+              Support Tickets ({tickets.length})
+            </button>
+          </div>
+        </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 pb-20">
+        {activeTab === 'tickets' ? (
+          <div className="pb-20">
+            <DashboardSupportTickets />
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-6 pb-20">
           {/* Overview */}
           <div className="lg:col-span-2 space-y-6">
             {/* Battery & Range */}
@@ -260,6 +304,7 @@ export function DashboardPage() {
             </motion.div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

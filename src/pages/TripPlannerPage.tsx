@@ -80,7 +80,9 @@ export function TripPlannerPage() {
     }
 
     try {
-      // Calculate real-world road routing and distance
+      // Calculate real-world road routing and distance.
+      // calculateRouteDistance throws a descriptive error if the route
+      // cannot be established — surface that message directly.
       const routeData = await calculateRouteDistance(
         startValidation.location,
         destValidation.location
@@ -102,8 +104,14 @@ export function TripPlannerPage() {
         distance: routeData.distanceKm,
         date: new Date().toISOString(),
       });
-    } catch {
-      setError('Unable to calculate route. Please try again.');
+    } catch (err) {
+      // Clear any previous route so a stale result is never shown.
+      setPlan(null);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Location not found. Please enter a valid place.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -80,13 +80,26 @@ function normalizeKey(str: string): string {
 // Check if string looks like random keyboard mashing/gibberish (e.g. asdfghjk, qwer123, zzzz)
 function isGibberish(str: string): boolean {
   const s = str.trim().toLowerCase();
+  const key = normalizeKey(s);
+
+  // Single char is never a valid city name
   if (s.length < 2) return true;
-  // Repeated sequence of consonants with no vowel (e.g. asdfghjk, dfghjk, qwrtyp)
-  if (/^[bcdfghjklmnpqrstvwxyz]{5,}$/.test(s)) return true;
+
+  // Very short inputs (< 3 chars) are only valid if they are an EXACT key in known locations
+  if (key.length < 3 && !KNOWN_LOCATIONS[key]) return true;
+
+  // Repeated sequence of consonants with no vowel (e.g. asdfghjk, dfghjk, qwrtyp, xyz)
+  if (/^[bcdfghjklmnpqrstvwxyz]{3,}$/.test(key) && !KNOWN_LOCATIONS[key]) return true;
+
   // Keyboard rows like asdf, asdfgh, qwer
-  if (/^(asdf|qwerty|zxcv|hjkl)/.test(s) && !KNOWN_LOCATIONS[normalizeKey(s)]) return true;
+  if (/^(asdf|qwerty|zxcv|hjkl)/.test(key) && !KNOWN_LOCATIONS[key]) return true;
+
   // Obvious non-word punctuation or number-letter soup
   if (/[0-9]{3,}/.test(s) && !s.includes('sector') && !s.includes('phase')) return true;
+
+  // Pure repeated characters (e.g. "aaaa", "zzzz")
+  if (/^(..)\1+$/.test(key) && !KNOWN_LOCATIONS[key]) return true;
+
   return false;
 }
 
@@ -132,13 +145,26 @@ export async function validateLocation(
     };
   }
 
-  // Check partial matches in known locations (e.g. "Vijayawada city" or "Greater Hyderabad")
-  for (const [k, loc] of Object.entries(KNOWN_LOCATIONS)) {
-    if (key.includes(k) || k.includes(key)) {
-      return {
-        valid: true,
-        location: loc,
-      };
+  // Check partial matches in known locations (e.g. "Vijayawada city" or "Greater Hyderabad").
+  // IMPORTANT: only allow partial matching when:
+  //   - the user typed at least 4 characters (prevents "ad" matching "adilabad"), AND
+  //   - the match ratio is ≥ 0.6 (user input covers most of the known key, not the other way around).
+  // We intentionally do NOT allow k.includes(key) without the ratio guard — that was the
+  // primary source of phantom routes from short/invalid input.
+  if (key.length >= 4) {
+    for (const [k, loc] of Object.entries(KNOWN_LOCATIONS)) {
+      const shorter = Math.min(key.length, k.length);
+      const longer  = Math.max(key.length, k.length);
+      const ratio   = shorter / longer;
+
+      // User input contains the known key (e.g. "vijayawadacity" ⊇ "vijayawada")
+      if (key.includes(k) && ratio >= 0.6) {
+        return { valid: true, location: loc };
+      }
+      // Known key contains the user input (e.g. "vijayawad" ⊂ "vijayawada")
+      if (k.includes(key) && ratio >= 0.6) {
+        return { valid: true, location: loc };
+      }
     }
   }
 
@@ -168,9 +194,19 @@ export async function validateLocation(
         const lat = parseFloat(item.lat);
         const lng = parseFloat(item.lon);
 
-        if (!isNaN(lat) && !isNaN(lng)) {
+        // Reject placeholder / degenerate coordinates
+        const invalidCoord =
+          isNaN(lat) ||
+          isNaN(lng) ||
+          (lat === 0 && lng === 0) ||
+          Math.abs(lat) > 90 ||
+          Math.abs(lng) > 180;
+
+        if (!invalidCoord) {
           const loc: GeoLocation = {
-            name: trimmed,
+            name: item.display_name
+              ? item.display_name.split(',')[0].trim()
+              : trimmed,
             formattedName: item.display_name || trimmed,
             lat,
             lng,
@@ -186,27 +222,14 @@ export async function validateLocation(
     // Nominatim returned 0 results -> unrecognized / invalid
     return {
       valid: false,
-      error: `Unrecognized ${fieldLabel.toLowerCase()} "${trimmed}". Please check the spelling or enter a valid city (e.g. Vijayawada).`,
+      error: `Location not found. "${trimmed}" could not be recognised. Please enter a valid place (e.g. Vijayawada).`,
     };
   } catch {
-    // If network error/timeout occurred:
-    // If it's a known pattern or reasonable word, we don't block arbitrarily, but if unrecognized gibberish, reject
-    if (trimmed.length > 3 && /^[a-zA-Z\s,.-]+$/.test(trimmed)) {
-      // Return fallback coordinates near South/Central India corridor if plausible
-      return {
-        valid: true,
-        location: {
-          name: trimmed,
-          formattedName: `${trimmed}, India`,
-          lat: 17.0,
-          lng: 79.5,
-        },
-      };
-    }
-
+    // Network error or timeout — NEVER fall back to fake coordinates.
+    // An unverified location must always be rejected to prevent phantom routes.
     return {
       valid: false,
-      error: `Unable to recognize "${trimmed}". Please check the spelling or enter a valid location.`,
+      error: `Location not found. Could not look up "${trimmed}" — please check your connection or enter a well-known city name.`,
     };
   }
 }
@@ -233,26 +256,47 @@ export function calculateHaversineDistance(
 }
 
 /**
- * Computes authentic driving route distance and driving time between two locations.
- * Queries OSRM road routing engine for real turn-by-turn road distance.
- * Falls back to Haversine calculation with authentic road curvature factor (1.20 - 1.25x).
+ * Computes real driving route distance and time between two verified locations.
+ * Queries OSRM for turn-by-turn road distance.
+ * Falls back to Haversine with a highway curvature factor ONLY for coordinates
+ * that were actually geocoded (i.e. not placeholder/fallback values).
+ *
+ * Throws if a route cannot be established so the caller can show an error
+ * instead of displaying a phantom route.
  */
 export async function calculateRouteDistance(
   start: GeoLocation,
   dest: GeoLocation
 ): Promise<{ distanceKm: number; drivingDurationMinutes: number }> {
-  // If start and destination are identical
+  // Guard: reject obviously invalid / placeholder coordinates.
+  // lat 0,0 or the old fallback centroid (17.0 / 79.5) must never produce a route.
+  const isPlaceholder = (lat: number, lng: number) =>
+    (lat === 0 && lng === 0) ||
+    isNaN(lat) ||
+    isNaN(lng) ||
+    (lat === 17.0 && lng === 79.5);
+
+  if (isPlaceholder(start.lat, start.lng) || isPlaceholder(dest.lat, dest.lng)) {
+    throw new Error(
+      'Location not found. One or both locations could not be verified. Please enter valid places.'
+    );
+  }
+
+  // If start and destination resolve to the same point, return trivial values.
   const straightDist = calculateHaversineDistance(start.lat, start.lng, dest.lat, dest.lng);
   if (straightDist < 1) {
     return { distanceKm: 1, drivingDurationMinutes: 5 };
   }
 
-  // 1. Try real road routing via OSRM
+  // 1. Try real road routing via OSRM.
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${dest.lng},${dest.lat}?overview=false`;
+    const osrmUrl =
+      `https://router.project-osrm.org/route/v1/driving/` +
+      `${start.lng},${start.lat};${dest.lng},${dest.lat}?overview=false`;
+
     const res = await fetch(osrmUrl, { signal: controller.signal });
     clearTimeout(timeoutId);
 
@@ -262,25 +306,30 @@ export async function calculateRouteDistance(
         const roadDistanceKm = Math.round(data.routes[0].distance / 1000);
         const durationMin = Math.round(data.routes[0].duration / 60);
         if (roadDistanceKm > 0) {
-          return {
-            distanceKm: roadDistanceKm,
-            drivingDurationMinutes: durationMin,
-          };
+          return { distanceKm: roadDistanceKm, drivingDurationMinutes: durationMin };
         }
       }
+      // OSRM returned an empty/zero route — treat as unroutable.
+      throw new Error(
+        'Location not found. No drivable route could be found between these locations.'
+      );
     }
-  } catch {
-    // Graceful fallback to real Haversine with highway road factor
+
+    // Non-OK HTTP status from OSRM
+    throw new Error('Location not found. The routing service returned an error.');
+  } catch (err) {
+    // Re-throw our own structured errors unchanged.
+    if (err instanceof Error && err.message.startsWith('Location not found')) {
+      throw err;
+    }
+    // Network timeout or AbortError: fall back to Haversine for confirmed real geocoded coords.
+    // Both coordinates passed the guard above so they are genuinely geocoded.
+    const estimatedRoadKm = Math.round(straightDist * 1.22);
+    const avgSpeedKmH = 65;
+    const drivingDurationMinutes = Math.round((estimatedRoadKm / avgSpeedKmH) * 60);
+    return {
+      distanceKm: Math.max(10, estimatedRoadKm),
+      drivingDurationMinutes,
+    };
   }
-
-  // 2. Highway road factor fallback
-  // Highway curvature factor typically ranges between 1.18 and 1.25 for Indian highways
-  const estimatedRoadKm = Math.round(straightDist * 1.22);
-  const avgSpeedKmH = 65; // realistic highway driving speed
-  const drivingDurationMinutes = Math.round((estimatedRoadKm / avgSpeedKmH) * 60);
-
-  return {
-    distanceKm: Math.max(10, estimatedRoadKm),
-    drivingDurationMinutes,
-  };
 }

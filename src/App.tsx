@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppProvider, useApp } from '@/context/AppContext';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { UserLayout } from '@/components/layout/UserLayout';
+import { StationOwnerLayout } from '@/components/layout/StationOwnerLayout';
+import { RoleProtectedRoute } from '@/components/layout/RoleProtectedRoute';
 import { LandingPage } from '@/pages/LandingPage';
 import { StationsPage } from '@/pages/StationsPage';
 import { StationDetailsPage } from '@/pages/StationDetailsPage';
@@ -10,53 +12,157 @@ import { TripPlannerPage } from '@/pages/TripPlannerPage';
 import { HowItWorksPage } from '@/pages/HowItWorksPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { PaymentPage } from '@/pages/PaymentPage';
+import { MyBookingsPage } from '@/pages/MyBookingsPage';
+import { AIAgentPage } from '@/pages/AIAgentPage';
+import { SupportPage } from '@/pages/SupportPage';
+import { StationOwnerDashboardPage } from '@/pages/StationOwnerDashboardPage';
+import { StationOwnerRegisterPage } from '@/pages/StationOwnerRegisterPage';
 
 function PageRouter() {
   const { page } = useApp();
 
-  const renderPage = () => {
+  const renderRoute = () => {
     switch (page) {
-      case 'home': return <LandingPage />;
-      case 'stations': return <StationsPage />;
-      case 'station-details': return <StationDetailsPage />;
-      case 'reserve': return <ReservationPage />;
-      case 'trip-planner': return <TripPlannerPage />;
-      case 'how-it-works': return <HowItWorksPage />;
-      case 'dashboard': return <DashboardPage />;
-      case 'login': return <LoginPage />;
-      default: return <LandingPage />;
+      // ── PUBLIC ROUTES ──────────────────────────────────────────────────────────
+      case 'home':
+        return (
+          <UserLayout>
+            <LandingPage />
+          </UserLayout>
+        );
+
+      case 'login':
+        return <LoginPage />;
+
+      case 'station-owner-register':
+        return <StationOwnerRegisterPage />;
+
+      case 'how-it-works':
+        return (
+          <UserLayout>
+            <HowItWorksPage />
+          </UserLayout>
+        );
+
+      // ── EV USER ROUTES (Dedicated UserLayout) ──────────────────────────────────
+      case 'dashboard':
+        return (
+          <RoleProtectedRoute allowedRoles={['USER', 'ADMIN']}>
+            <UserLayout>
+              <DashboardPage />
+            </UserLayout>
+          </RoleProtectedRoute>
+        );
+
+      case 'stations':
+        return (
+          <UserLayout>
+            <StationsPage />
+          </UserLayout>
+        );
+
+      case 'station-details':
+        return (
+          <UserLayout>
+            <StationDetailsPage />
+          </UserLayout>
+        );
+
+      case 'reserve':
+        return (
+          <UserLayout>
+            <ReservationPage />
+          </UserLayout>
+        );
+
+      case 'payment':
+        return (
+          <UserLayout>
+            <PaymentPage />
+          </UserLayout>
+        );
+
+      case 'trip-planner':
+        return (
+          <UserLayout>
+            <TripPlannerPage />
+          </UserLayout>
+        );
+
+      case 'my-bookings':
+        return (
+          <UserLayout>
+            <MyBookingsPage />
+          </UserLayout>
+        );
+
+      case 'ai-agent':
+        return (
+          <UserLayout>
+            <AIAgentPage />
+          </UserLayout>
+        );
+
+      case 'support':
+        return (
+          <UserLayout>
+            <SupportPage />
+          </UserLayout>
+        );
+
+      // ── STATION OWNER ROUTES (Dedicated StationOwnerLayout) ────────────────────
+      case 'station-owner-dashboard':
+      case 'station-owner-stations':
+      case 'station-owner-chargers':
+      case 'station-owner-bookings':
+      case 'station-owner-payments':
+      case 'station-owner-refunds':
+      case 'station-owner-tickets':
+      case 'station-owner-analytics':
+      case 'station-owner-ai-insights':
+      case 'station-owner-settings':
+        return (
+          <RoleProtectedRoute allowedRoles={['STATION_OWNER']}>
+            <StationOwnerLayout>
+              <StationOwnerDashboardPage />
+            </StationOwnerLayout>
+          </RoleProtectedRoute>
+        );
+
+      default:
+        return (
+          <UserLayout>
+            <LandingPage />
+          </UserLayout>
+        );
     }
   };
 
-  const showFooter = page !== 'login';
-
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={page}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {renderPage()}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-      {showFooter && <Footer />}
-    </div>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={page}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+      >
+        {renderRoute()}
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
 function App() {
   return (
     <AppProvider>
-      <PageRouter />
+      <ErrorBoundary>
+        <PageRouter />
+      </ErrorBoundary>
     </AppProvider>
   );
 }
 
 export default App;
+
